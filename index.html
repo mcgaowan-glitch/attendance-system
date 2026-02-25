@@ -1,64 +1,222 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<title>雲端簽到</title>
-</head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雲端簽到系統</title>
+    <style>
+        :root {
+            --primary-color: #4facfe;
+            --secondary-color: #00f2fe;
+            --bg-color: #f5f7fa;
+            --text-color: #333;
+        }
 
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 2rem;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.3s;
+            font-size: 16px;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+        }
+
+        button {
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, opacity 0.2s;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid #eee;
+            margin: 1.5rem 0;
+        }
+
+        .list-header {
+            text-align: left;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        li {
+            background: #fff;
+            margin-bottom: 10px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeIn 0.4s ease;
+        }
+
+        li span.name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        li span.time {
+            font-size: 0.8rem;
+            color: #95a5a6;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 捲軸樣式 */
+        ul::-webkit-scrollbar { width: 5px; }
+        ul::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
+    </style>
+</head>
 <body>
 
-<h2>雲端簽到系統</h2>
+<div class="container">
+    <h2>雲端簽到系統</h2>
+    
+    <div class="input-group">
+        <input id="name" placeholder="輸入您的姓名..." autocomplete="off">
+        <button onclick="signin()">簽到</button>
+    </div>
 
-<input id="name" placeholder="輸入姓名">
-<button onclick="signin()">簽到</button>
-
-<ul id="list"></ul>
+    <hr>
+    
+    <div class="list-header">最近簽到紀錄</div>
+    <ul id="list"></ul>
+</div>
 
 <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue, query, limitToLast } 
+    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, push, onValue } 
-from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    const firebaseConfig = {
+      apiKey: "AIzaSyACpUi6HAfPZueC-NHNbno-14ZepQ33U50",
+      authDomain: "attendance-f20a7.firebaseapp.com",
+      databaseURL: "https://attendance-f20a7-default-rtdb.firebaseio.com",
+      projectId: "attendance-f20a7",
+      storageBucket: "attendance-f20a7.firebasestorage.app",
+      messagingSenderId: "1066917565778",
+      appId: "1:1066917565778:web:6dacfdf248f85bb290168b",
+      measurementId: "G-LGNCFVBR0G"
+    };
 
-const firebaseConfig = {
-  apiKey: "AIzaSyACpUi6HAfPZueC-NHNbno-14ZepQ33U50",
-  authDomain: "attendance-f20a7.firebaseapp.com",
-  databaseURL: "https://attendance-f20a7-default-rtdb.firebaseio.com",
-  projectId: "attendance-f20a7",
-  storageBucket: "attendance-f20a7.firebasestorage.app",
-  messagingSenderId: "1066917565778",
-  appId: "1:1066917565778:web:6dacfdf248f85bb290168b",
-  measurementId: "G-LGNCFVBR0G"
-};
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+    // 簽到功能
+    window.signin = function(){
+      const nameInput = document.getElementById("name");
+      const name = nameInput.value.trim();
+      if(!name) {
+          alert("請輸入姓名");
+          return;
+      }
 
-window.signin = function(){
-  const name = document.getElementById("name").value;
-  if(!name) return;
+      push(ref(db, "attendance"), {
+        name: name,
+        time: new Date().toLocaleString('zh-TW', { hour12: false })
+      }).then(() => {
+        nameInput.value = "";
+      }).catch(err => alert("簽到失敗：" + err));
+    };
 
-  push(ref(db,"attendance"),{
-    name:name,
-    time:new Date().toLocaleString()
-  });
+    // 載入資料 (顯示最新 50 筆)
+    function loadData(){
+      const list = document.getElementById("list");
+      const attendanceRef = ref(db, "attendance");
 
-  document.getElementById("name").value="";
-};
+      onValue(attendanceRef, (snapshot) => {
+        list.innerHTML = "";
+        const items = [];
+        
+        snapshot.forEach(child => {
+          items.push(child.val());
+        });
 
-function loadData(){
-  const list = document.getElementById("list");
+        // 最新的排上面
+        items.reverse().forEach(d => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <span class="name">${d.name}</span>
+            <span class="time">${d.time}</span>
+          `;
+          list.appendChild(li);
+        });
+      });
+    }
 
-  onValue(ref(db,"attendance"),(snapshot)=>{
-    list.innerHTML="";
-    snapshot.forEach(child=>{
-      const d = child.val();
-      list.innerHTML += `<li>${d.name} - ${d.time}</li>`;
+    loadData();
+
+    // 支援按下 Enter 鍵簽到
+    document.getElementById("name").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") window.signin();
     });
-  });
-}
-
-loadData();
 
 </script>
 
