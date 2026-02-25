@@ -2,66 +2,65 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>簽到系統</title>
-<style>
-body { font-family: Arial; text-align: center; background: #f4f4f4; }
-.container { margin-top: 50px; }
-input, button { padding: 8px; margin: 5px; }
-table { margin: 20px auto; border-collapse: collapse; }
-td, th { border: 1px solid #ccc; padding: 8px 12px; }
-</style>
+<title>雲端簽到</title>
 </head>
+
 <body>
 
-<div class="container">
-<h2>📋 簽到系統</h2>
+<h2>雲端簽到系統</h2>
 
-<input id="name" placeholder="請輸入姓名">
-<button onclick="checkIn()">簽到</button>
+<input id="name" placeholder="輸入姓名">
+<button onclick="signin()">簽到</button>
 
-<h3>簽到紀錄</h3>
-<table>
-<thead>
-<tr><th>姓名</th><th>時間</th></tr>
-</thead>
-<tbody id="records"></tbody>
-</table>
-</div>
+<ul id="list"></ul>
 
-<script>
-function loadRecords() {
-    const records = JSON.parse(localStorage.getItem("attendance")) || [];
-    const table = document.getElementById("records");
-    table.innerHTML = "";
-    records.forEach(r => {
-        table.innerHTML += `<tr><td>${r.name}</td><td>${r.time}</td></tr>`;
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getDatabase, ref, push, onValue } 
+from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyACpUi6HAfPZueC-NHNbno-14ZepQ33U50",
+  authDomain: "attendance-f20a7.firebaseapp.com",
+  databaseURL: "https://attendance-f20a7-default-rtdb.firebaseio.com",
+  projectId: "attendance-f20a7",
+  storageBucket: "attendance-f20a7.firebasestorage.app",
+  messagingSenderId: "1066917565778",
+  appId: "1:1066917565778:web:6dacfdf248f85bb290168b",
+  measurementId: "G-LGNCFVBR0G"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+window.signin = function(){
+  const name = document.getElementById("name").value;
+  if(!name) return;
+
+  push(ref(db,"attendance"),{
+    name:name,
+    time:new Date().toLocaleString()
+  });
+
+  document.getElementById("name").value="";
+};
+
+function loadData(){
+  const list = document.getElementById("list");
+
+  onValue(ref(db,"attendance"),(snapshot)=>{
+    list.innerHTML="";
+    snapshot.forEach(child=>{
+      const d = child.val();
+      list.innerHTML += `<li>${d.name} - ${d.time}</li>`;
     });
+  });
 }
 
-function checkIn() {
-    const name = document.getElementById("name").value.trim();
-    if (!name) {
-        alert("請輸入姓名！");
-        return;
-    }
+loadData();
 
-    let records = JSON.parse(localStorage.getItem("attendance")) || [];
-
-    if (records.some(r => r.name === name)) {
-        alert("你已經簽到過了！");
-        return;
-    }
-
-    const time = new Date().toLocaleString();
-    records.push({name, time});
-
-    localStorage.setItem("attendance", JSON.stringify(records));
-    loadRecords();
-}
-
-loadRecords();
 </script>
 
 </body>
-
 </html>
