@@ -3,158 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雲端簽到系統</title>
+    <title>新生報到系統</title>
     <style>
         :root {
-            --primary-color: #4facfe;
-            --secondary-color: #00f2fe;
-            --bg-color: #f5f7fa;
-            --text-color: #333;
+            --red-bg: #fff5f5; --red-border: #feb2b2; --red-text: #c53030;
+            --green-bg: #f0fff4; --green-border: #9ae6b4; --green-text: #276749;
+            --primary: #4299e1;
         }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 800px; margin: auto; background-color: #f7fafc; }
+        h2 { text-align: center; color: #2d3748; }
 
-        body {
-            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-            padding: 20px;
+        /* 輸入區域樣式 */
+        .input-group { 
+            background: white; padding: 20px; border-radius: 12px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; gap: 10px; margin-bottom: 25px; 
         }
-
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 450px;
-            text-align: center;
+        select, input { flex: 1; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px; }
+        button { 
+            padding: 12px 24px; background: var(--primary); color: white; border: none; 
+            border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;
         }
+        button:disabled { background: #cbd5e0; cursor: not-allowed; }
 
-        h2 {
-            color: #2c3e50;
-            margin-bottom: 1.5rem;
-            font-weight: 600;
+        /* 班級統計面板 */
+        .stats-grid { 
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 25px; 
         }
-
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 2rem;
+        .class-box { 
+            padding: 15px 5px; text-align: center; border-radius: 10px; border: 2px solid; 
+            transition: transform 0.2s; 
         }
+        .class-box.not-arrived { background: var(--red-bg); border-color: var(--red-border); color: var(--red-text); }
+        .class-box.has-arrived { background: var(--green-bg); border-color: var(--green-border); color: var(--green-text); }
+        .class-name { font-size: 12px; margin-bottom: 4px; opacity: 0.8; }
+        .class-count { font-size: 22px; font-weight: 800; }
 
-        input {
-            flex: 1;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            outline: none;
-            transition: border-color 0.3s;
-            font-size: 16px;
+        /* 列表樣式 */
+        .list-container { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .list-header { font-weight: bold; padding: 10px; border-bottom: 2px solid #edf2f7; display: flex; justify-content: space-between; }
+        ul { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
+        li { 
+            padding: 12px; border-bottom: 1px solid #edf2f7; display: flex; 
+            justify-content: space-between; align-items: center; 
         }
-
-        input:focus {
-            border-color: var(--primary-color);
+        .tag { 
+            background: #ebf8ff; color: #3182ce; padding: 2px 8px; 
+            border-radius: 6px; font-size: 12px; margin-right: 8px; font-weight: bold;
         }
+        .time { color: #a0aec0; font-size: 12px; }
 
-        button {
-            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: transform 0.2s, opacity 0.2s;
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
-        }
-
-        button:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-
-        button:active {
-            transform: translateY(1px);
-        }
-
-        hr {
-            border: 0;
-            border-top: 1px solid #eee;
-            margin: 1.5rem 0;
-        }
-
-        .list-header {
-            text-align: left;
-            font-size: 0.9rem;
-            color: #7f8c8d;
-            margin-bottom: 10px;
-        }
-
-        ul {
-            list-style: none;
-            padding: 0;
-            max-height: 300px;
-            overflow-y: auto;
-            text-align: left;
-        }
-
-        li {
-            background: #fff;
-            margin-bottom: 10px;
-            padding: 12px 15px;
-            border-radius: 8px;
-            border-left: 4px solid var(--primary-color);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            animation: fadeIn 0.4s ease;
-        }
-
-        li span.name {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        li span.time {
-            font-size: 0.8rem;
-            color: #95a5a6;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* 捲軸樣式 */
-        ul::-webkit-scrollbar { width: 5px; }
-        ul::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
+        @media (max-width: 500px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } .input-group { flex-direction: column; } }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>雲端簽到系統</h2>
-    
-    <div class="input-group">
-        <input id="name" placeholder="輸入您的姓名..." autocomplete="off">
-        <button onclick="signin()">簽到</button>
+<h2>簽到系統</h2>
+
+<div class="input-group">
+    <select id="classSelect">
+        <option value="">選擇班級...</option>
+        <script>
+            for(let i=1; i<=15; i++) document.write(`<option value="${i}">${i} 班</option>`);
+        </script>
+    </select>
+    <input id="nameInput" placeholder="請輸入姓名" autocomplete="off">
+    <button onclick="signin()" id="submitBtn">簽到</button>
+</div>
+
+<div class="list-header" style="border:none;">各班到齊概況 (紅色=缺席 / 綠色=人數)</div>
+<div id="statsGrid" class="stats-grid">
     </div>
 
-    <hr>
-    
-    <div class="list-header">最近簽到紀錄</div>
-    <ul id="list"></ul>
+<div class="list-container">
+    <div class="list-header">
+        <span>最近簽到紀錄</span>
+        <span id="totalCount" style="color: #718096; font-size: 14px;">總計：0 人</span>
+    </div>
+    <ul id="historyList"></ul>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue, query, limitToLast } 
+    import { getDatabase, ref, push, onValue, query, limitToLast, serverTimestamp } 
     from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
+    // 這裡使用您原本提供的 Firebase 配置
     const firebaseConfig = {
       apiKey: "AIzaSyACpUi6HAfPZueC-NHNbno-14ZepQ33U50",
       authDomain: "attendance-f20a7.firebaseapp.com",
@@ -168,57 +101,23 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const dbRef = ref(db, "attendance");
 
     // 簽到功能
-    window.signin = function(){
-      const nameInput = document.getElementById("name");
-      const name = nameInput.value.trim();
-      if(!name) {
-          alert("請輸入姓名");
-          return;
-      }
+    window.signin = async function() {
+        const cSelect = document.getElementById("classSelect");
+        const nInput = document.getElementById("nameInput");
+        const btn = document.getElementById("submitBtn");
 
-      push(ref(db, "attendance"), {
-        name: name,
-        time: new Date().toLocaleString('zh-TW', { hour12: false })
-      }).then(() => {
-        nameInput.value = "";
-      }).catch(err => alert("簽到失敗：" + err));
-    };
+        const className = cSelect.value;
+        const name = nInput.value.trim();
 
-    // 載入資料 (顯示最新 50 筆)
-    function loadData(){
-      const list = document.getElementById("list");
-      const attendanceRef = ref(db, "attendance");
+        if(!className || !name) {
+            alert("班級跟姓名都要填寫喔！");
+            return;
+        }
 
-      onValue(attendanceRef, (snapshot) => {
-        list.innerHTML = "";
-        const items = [];
+        btn.disabled = true;
         
-        snapshot.forEach(child => {
-          items.push(child.val());
-        });
-
-        // 最新的排上面
-        items.reverse().forEach(d => {
-          const li = document.createElement("li");
-          li.innerHTML = `
-            <span class="name">${d.name}</span>
-            <span class="time">${d.time}</span>
-          `;
-          list.appendChild(li);
-        });
-      });
-    }
-
-    loadData();
-
-    // 支援按下 Enter 鍵簽到
-    document.getElementById("name").addEventListener("keypress", (e) => {
-        if (e.key === "Enter") window.signin();
-    });
-
-</script>
-
-</body>
-</html>
+        try {
+            await push(dbRef, {
