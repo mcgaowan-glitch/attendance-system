@@ -54,7 +54,7 @@
 </head>
 <body>
 
-<h2>簽到系統</h2>
+<h2>為大帥哥張折均研發的體推專用簽到系統</h2>
 
 <div class="input-group">
     <select id="classSelect">
@@ -64,7 +64,7 @@
     <button onclick="signin()" id="submitBtn">簽到</button>
 </div>
 
-<div class="list-header" style="border:none;">各班到齊概況 (紅色=缺席 / 綠色=人數)</div>
+<div class="list-header" style="border:none;">各班到齊概況 </div>
 <div id="statsGrid" class="stats-grid"></div>
 
 <div class="list-container">
@@ -112,7 +112,7 @@ function signin() {
   const btn = document.getElementById("submitBtn");
 
   if (!className || !name) {
-    alert("班級跟姓名都要填寫喔！");
+    alert("你眼睛不好嗎，班級跟姓名都要填寫喔！");
     return;
   }
 
@@ -200,4 +200,5 @@ document.getElementById("nameInput").addEventListener("keypress", (e) => {
 </script>
 </body>
 </html>
+
 
