@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新生報到系統</title>
+    <title>簽到系統</title>
     <style>
         :root {
             --red-bg: #fff5f5; --red-border: #feb2b2; --red-text: #c53030;
@@ -13,7 +13,6 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; max-width: 800px; margin: auto; background-color: #f7fafc; }
         h2 { text-align: center; color: #2d3748; }
 
-        /* 輸入區域樣式 */
         .input-group { 
             background: white; padding: 20px; border-radius: 12px; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; gap: 10px; margin-bottom: 25px; 
@@ -25,7 +24,6 @@
         }
         button:disabled { background: #cbd5e0; cursor: not-allowed; }
 
-        /* 班級統計面板 */
         .stats-grid { 
             display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 25px; 
         }
@@ -38,7 +36,6 @@
         .class-name { font-size: 12px; margin-bottom: 4px; opacity: 0.8; }
         .class-count { font-size: 22px; font-weight: 800; }
 
-        /* 列表樣式 */
         .list-container { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .list-header { font-weight: bold; padding: 10px; border-bottom: 2px solid #edf2f7; display: flex; justify-content: space-between; }
         ul { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
@@ -62,17 +59,13 @@
 <div class="input-group">
     <select id="classSelect">
         <option value="">選擇班級...</option>
-        <script>
-            for(let i=1; i<=15; i++) document.write(`<option value="${i}">${i} 班</option>`);
-        </script>
     </select>
     <input id="nameInput" placeholder="請輸入姓名" autocomplete="off">
     <button onclick="signin()" id="submitBtn">簽到</button>
 </div>
 
 <div class="list-header" style="border:none;">各班到齊概況 (紅色=缺席 / 綠色=人數)</div>
-<div id="statsGrid" class="stats-grid">
-    </div>
+<div id="statsGrid" class="stats-grid"></div>
 
 <div class="list-container">
     <div class="list-header">
@@ -84,40 +77,123 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue, query, limitToLast, serverTimestamp } 
+    import { getDatabase, ref, push, onValue, serverTimestamp } 
     from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // 這裡使用您原本提供的 Firebase 配置
     const firebaseConfig = {
-      apiKey: "AIzaSyACpUi6HAfPZueC-NHNbno-14ZepQ33U50",
-      authDomain: "attendance-f20a7.firebaseapp.com",
-      databaseURL: "https://attendance-f20a7-default-rtdb.firebaseio.com",
-      projectId: "attendance-f20a7",
-      storageBucket: "attendance-f20a7.firebasestorage.app",
-      messagingSenderId: "1066917565778",
-      appId: "1:1066917565778:web:6dacfdf248f85bb290168b",
-      measurementId: "G-LGNCFVBR0G"
+        apiKey: "AIzaSyACpUi6HAfPZueC-NHNbno-14ZepQ33U50",
+        authDomain: "attendance-f20a7.firebaseapp.com",
+        databaseURL: "https://attendance-f20a7-default-rtdb.firebaseio.com",
+        projectId: "attendance-f20a7",
+        storageBucket: "attendance-f20a7.firebasestorage.app",
+        messagingSenderId: "1066917565778",
+        appId: "1:1066917565778:web:6dacfdf248f85bb290168b",
+        measurementId: "G-LGNCFVBR0G"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const dbRef = ref(db, "attendance");
 
-    // 簽到功能
-    window.signin = async function() {
-        const cSelect = document.getElementById("classSelect");
-        const nInput = document.getElementById("nameInput");
+    // 生成 1–15 班
+    const classSelect = document.getElementById("classSelect");
+    for (let i = 1; i <= 15; i++) {
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = `${i} 班`;
+        classSelect.appendChild(opt);
+    }
+
+    // 簽到
+    window.signin = async function () {
+        const c = classSelect.value;
+        const n = document.getElementById("nameInput").value.trim();
         const btn = document.getElementById("submitBtn");
 
-        const className = cSelect.value;
-        const name = nInput.value.trim();
-
-        if(!className || !name) {
+        if (!c || !n) {
             alert("班級跟姓名都要填寫喔！");
             return;
         }
 
         btn.disabled = true;
-        
         try {
             await push(dbRef, {
+                className: c,
+                name: n,
+                timestamp: serverTimestamp()
+            });
+            document.getElementById("nameInput").value = "";
+            document.getElementById("nameInput").focus();
+        } catch (e) {
+            alert("簽到失敗，請檢查網路");
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    // 即時監聽
+    function listenData() {
+        onValue(dbRef, (snapshot) => {
+            const data = [];
+            const counts = {};
+            for (let i = 1; i <= 15; i++) counts[i] = 0;
+
+            snapshot.forEach(child => {
+                const item = child.val();
+                data.push(item);
+                if (counts[item.className] !== undefined) {
+                    counts[item.className]++;
+                }
+            });
+
+            updateStats(counts);
+            updateList(data);
+            document.getElementById("totalCount").textContent = `總計：${data.length} 人`;
+        });
+    }
+
+    // 更新各班統計面板
+    function updateStats(counts) {
+        const grid = document.getElementById("statsGrid");
+        grid.innerHTML = "";
+        for (let i = 1; i <= 15; i++) {
+            const num = counts[i];
+            const box = document.createElement("div");
+            box.className = `class-box ${num > 0 ? 'has-arrived' : 'not-arrived'}`;
+            box.innerHTML = `
+                <div class="class-name">${i} 班</div>
+                <div class="class-count">${num}</div>
+            `;
+            grid.appendChild(box);
+        }
+    }
+
+    // 更新列表
+    function updateList(data) {
+        const list = document.getElementById("historyList");
+        const html = data
+            .reverse()
+            .slice(0, 50)
+            .map(item => `
+            <li>
+                <div>
+                    <span class="tag">${item.className} 班</span>
+                    <strong>${item.name}</strong>
+                </div>
+                <span class="time">${item.timestamp ? new Date(item.timestamp).toLocaleTimeString('zh-TW', { hour12: false }) : ''}</span>
+            </li>
+            `).join('');
+        list.innerHTML = html;
+    }
+
+    listenData();
+
+    // Enter 快捷簽到
+    document.getElementById("nameInput").addEventListener("keypress", e => {
+        if (e.key === "Enter") signin();
+    });
+</script>
+
+</body>
+</html>
+
